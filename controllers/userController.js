@@ -112,14 +112,30 @@ exports.getUser = async (req, res) => {
 // methode pour les infos d'un groupe
 exports.getInfoGroup = async (req, res) => {
     try {
-        const allInfo = await Group.find({group_id: req.params.group_id});
-        if (allInfo.length == 0) {
-            res.status(500).json({message: 'Aucun groupe trouvé.'});
-        } else {
-            res.status(200).json(allInfo);
+        const userId = req.params.user_id;
+        const groupId = req.params.group_id;
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
         }
+
+        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Groupe non trouvé.' });
+        }
+
+        if (group.user_id !== userId || group.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
+        }
+
+        // Si l'utilisateur est admin dans le groupe, renvoyer les informations du groupe
+        res.status(200).json(group);
     } catch (error) {
-        res.status(500).json({message: 'Utilisateur non trouvé.'});
+        res.status(500).json({ message: 'Erreur serveur.' });
     }
 };
 
@@ -151,12 +167,27 @@ exports.createGroup = async (req, res) => {
 // méthode pour supprimer un groupe
 exports.deleteGroup = async (req, res) => {
     try {
-        const group = await Group.findById(req.params.group_id);
+        const userId = req.params.user_id;
+        const groupId = req.params.group_id;
 
-        if (!group) {
-            return res.status(404).json({ message: 'Groupe non trouvé' });
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
         }
 
+        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Groupe non trouvé.' });
+        }
+
+        if (group.user_id !== userId || group.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
+        }
+
+        // Si l'utilisateur est admin dans le groupe, supprimer le groupe
         await Group.findByIdAndDelete(req.params.group_id);
         res.status(200).json({ message: 'Groupe supprimé' });
     } catch (error) {
@@ -173,8 +204,30 @@ exports.putGroup = async (req, res) => {
         if (existingGroup) {
             return res.status(400).json({ message: 'Le nom du groupe doit être unique.' });
         }
+        
+        const userId = req.params.user_id;
+        const groupId = req.params.group_id;
 
-        const group = await Group.findByIdAndUpdate(req.params.group_id, req.body, {new: true});
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
+
+        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Groupe non trouvé.' });
+        }
+
+        if (group.user_id !== userId || group.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
+        }
+
+        // Si l'utilisateur est admin dans le groupe, modifier les informations du groupe
+
+        await Group.findByIdAndUpdate(req.params.group_id, req.body, {new: true});
         res.status(200).json(group);
     } catch (error) {
         res.status(500).json({message: 'Erreur serveur'});
@@ -190,7 +243,29 @@ exports.patchGroup = async (req, res) => {
             return res.status(400).json({ message: 'Le nom du groupe doit être unique.' });
         }
 
-        const group = await Group.findByIdAndUpdate(req.params.group_id, req.body, {new: true});
+        const userId = req.params.user_id;
+        const groupId = req.params.group_id;
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
+
+        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Groupe non trouvé.' });
+        }
+
+        if (group.user_id !== userId || group.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
+        }
+
+        // Si l'utilisateur est admin dans le groupe, modifier les informations du groupe
+
+        group = await Group.findByIdAndUpdate(req.params.group_id, req.body, {new: true});
         res.status(200).json(group);
     } catch (error) {
         res.status(500).json({message: 'Erreur serveur'});
