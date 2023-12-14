@@ -13,9 +13,6 @@ app.use(express.json());
 const userRoute = require(`./routes/userRoute`);
 app.use('/users', userRoute);
 
-// Swagger configuration
-const swagger = require('./swagger');
-app.use('/api-docs', swagger.serveSwaggerUI, swagger.setupSwaggerUI);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
