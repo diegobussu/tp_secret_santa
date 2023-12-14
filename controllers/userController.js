@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const Group = require('../models/groupModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt'); // afin de comparer le hash du mot de passe
 require('dotenv').config();
@@ -86,6 +87,67 @@ exports.getUser = async (req, res) => {
         res.json(user);
     } catch (error) {
         console.log(error);
+        res.status(500).json({message: 'Erreur serveur'});
+    }
+};
+
+// methode pour les infos d'un groupe
+exports.getInfoGroup = async (req, res) => {
+    try {
+        const allInfo = await Group.find({user_id: req.params.user_id});
+        if (allInfo.length == 0) {
+            res.status(500).json({message: 'Aucun groupe trouvé.'});
+        } else {
+            res.status(200).json(allInfo);
+        }
+    } catch (error) {
+        res.status(500).json({message: 'Utilisateur non trouvé.'});
+    }
+};
+
+// methode pour créer un groupe
+exports.createGroup = async (req, res) => {
+    try {
+        await User.findById(req.params.user_id);
+        const newGroup = new Group({...req.body, user_id: req.params.user_id});
+        try {
+            const group = await newGroup.save();
+            res.status(201).json(group);
+        } catch (error) {
+            res.status(500).json({message: 'Erreur serveur'});
+        }
+    } catch (error) {
+        res.status(500).json({message: 'Utilisateur non trouvé.'});
+    }
+};
+
+// méthode pour supprimer un groupe
+exports.deleteGroup = async (req, res) => {
+    try {
+        await Group.findByIdAndDelete(req.params.user_id);
+        res.status(200).json({message: 'Groupe supprimé'});
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({message: 'Erreur serveur'});
+    }
+};
+
+// méthode pour modifier partiellement un groupe
+exports.putGroup = async (req, res) => {
+    try {
+        const group = await Group.findByIdAndUpdate(req.params.user_id, req.body, {new: true});
+        res.status(200).json(group);
+    } catch (error) {
+        res.status(500).json({message: 'Erreur serveur'});
+    }
+};
+
+// méthode pour modifier un groupe
+exports.patchGroup = async (req, res) => {
+    try {
+        const group = await Group.findByIdAndUpdate(req.params.user_id, req.body, {new: true});
+        res.status(200).json(group);
+    } catch (error) {
         res.status(500).json({message: 'Erreur serveur'});
     }
 };

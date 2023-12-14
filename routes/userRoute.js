@@ -19,4 +19,13 @@ router
     .patch(userController.patchUser)
     .get(userController.getUser)
 
+router 
+    .route('/:user_id/groups/')
+    .all(jwtMiddleware.verifiyToken)
+    .get(userController.getInfoGroup)
+    .post(userController.createGroup)
+    .delete(userController.deleteGroup)
+    .patch(userController.patchGroup)
+    .put(userController.putGroup)
+
 module.exports = router;
