@@ -271,3 +271,90 @@ exports.patchGroup = async (req, res) => {
         res.status(500).json({message: 'Erreur serveur'});
     }
 };
+
+// méthode pour envoyer une invitation
+exports.addInvitation = async (req, res) => {
+    try {
+        const userId = req.params.user_id;
+        const groupId = req.params.group_id;
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
+
+        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Groupe non trouvé.' });
+        }
+
+        if (group.user_id !== userId || group.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
+        }
+
+        // Si l'utilisateur est admin dans le groupe, envoyer une invitation à tous les users en BDD + générer un token de 1h
+
+        const token = await jwt.sign({ groupId, userId }, process.env.JWT_KEY_INVIT, { expiresIn: '1h' });
+
+        res.status(200).json({ message: 'Invitation envoyée avec succès.', token });
+    } catch (error) {
+        res.status(500).json({message: 'Erreur serveur'});
+    }
+};
+
+
+// méthode pour accepter une invitation
+exports.acceptInvit = async (req, res) => {
+    try {
+        const userId = req.params.user_id;
+        const groupId = req.params.group_id;
+
+        const user = await User.findById(userId);
+        const group = await Group.findById(groupId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
+
+        if (group.user_id == userId || group.role == 'admin') {
+            return res.status(403).json({ message: 'Accès refusé. Vous ne pouvez pas accepter une invitation de votre propre groupe.' });
+        }
+
+        // Ajouter l'utilisateur au groupe et lui attribuer le rôle "user"
+        group.role = 'admin';
+
+        await group.save();
+
+        res.status(200).json({ message: 'Invitation acceptée avec succès.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+};
+
+// méthode pour refuser une invitation
+exports.declineInvit = async (req, res) => {
+    try {
+        const userId = req.params.user_id;
+        const groupId = req.params.group_id;
+
+        const user = await User.findById(userId);
+        const group = await Group.findById(groupId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
+
+        if (group.user_id == userId || group.role == 'admin') {
+            return res.status(403).json({ message: 'Accès refusé. Vous ne pouvez pas refuser une invitation de votre propre groupe.' });
+        }
+
+        res.status(200).json({ message: 'Invitation refusée avec succès.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+};
