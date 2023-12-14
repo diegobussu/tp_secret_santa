@@ -12,6 +12,12 @@ let groupSchema = new Schema ({
         required: true,
         unique: true
     },
+    role: {
+        type: String,
+        required: true,
+        default: 'user',
+        enum: ['user', 'admin']
+    }
 });
 
 module.exports = mongoose.model('Group', groupSchema);

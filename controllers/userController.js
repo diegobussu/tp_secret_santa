@@ -20,12 +20,6 @@ exports.userRegister = async (req, res) => {
 // méthode pour se connecter
 exports.userLogin = async (req, res) => {
     try {
-        // Vérifier si l'emailest unique
-        const existingEmail = await User.findOne({ email: req.body.email });
-        if (existingEmail) {
-            return res.status(400).json({ message: 'L email doit être unique.' });
-        }
-
         const user = await User.findOne({email: req.body.email});
         if(!user) {
             res.status(500).json({message: 'Utilisateur non trouvé'});
@@ -95,7 +89,7 @@ exports.patchUser = async (req, res) => {
         if (existingEmail) {
             return res.status(400).json({ message: 'L email doit être unique.' });
         }
-        
+
         const user = await User.findByIdAndUpdate(req.params.user_id, req.body, {new: true});
         res.status(200).json(user);
     } catch (error) {
@@ -143,7 +137,9 @@ exports.createGroup = async (req, res) => {
         const newGroup = new Group({...req.body, user_id: req.params.user_id});
         try {
             const group = await newGroup.save();
-            res.status(201).json({ message: `Groupe créé ! id : ${group.id}` });  
+            group.role = 'admin';
+            await group.save();
+            res.status(201).json({ message: `Groupe créé ! id : ${group.id}, role : ${group.role}` });  
         } catch (error) {
             res.status(500).json({message: 'Erreur serveur'});
         }
