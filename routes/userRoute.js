@@ -22,10 +22,13 @@ router
 router 
     .route('/:user_id/groups/')
     .all(jwtMiddleware.verifiyToken)
-    .get(userController.getInfoGroup)
     .post(userController.createGroup)
+
+router 
+    .route('/:user_id/groups/:group_id')
+    .all(jwtMiddleware.verifiyToken)
+    .get(userController.getInfoGroup)
     .delete(userController.deleteGroup)
     .patch(userController.patchGroup)
     .put(userController.putGroup)
-
 module.exports = router;
