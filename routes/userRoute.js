@@ -62,24 +62,20 @@ router
     .all(jwtMiddleware.verifiyToken)
     .get(userController.getInfoGroup)
     .delete(userController.deleteGroup)
-    .patch(userController.patchGroup)
-    .put(userController.putGroup)
 
 router  
-    .all(jwtMiddleware.verifiyToken)
     .route('/:user_id/groups/:group_id/invitation')
+    .all(jwtMiddleware.verifiyToken)
     .post(userController.addInvitation)
 
 router
-    .all(jwtMiddleware.verifiyToken)
-    .all(jwtMiddleware.verifiyTokenInvit)
     .route('/:user_id/groups/:group_id/invitation/accept')
+    .all(jwtMiddleware.verifiyTokenInvit)
     .post(userController.acceptInvit)
 
 router
-    .all(jwtMiddleware.verifiyToken)
-    .all(jwtMiddleware.verifiyTokenInvit)
     .route('/:user_id/groups/:group_id/invitation/decline')
+    .all(jwtMiddleware.verifiyTokenInvit)
     .post(userController.declineInvit)
 
 module.exports = router;
