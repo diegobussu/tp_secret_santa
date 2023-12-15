@@ -4,7 +4,7 @@ require('dotenv').config();
 // méthode pour vérifier le token d'un utilisateur
 exports.verifyToken = async (req, res, next) => {
     try {
-        const token = req.header('authorization');
+        const token = req.header('authorization_login');
 
         if (token !== undefined) {
             const payload = await new Promise((resolve, reject) => {
@@ -39,7 +39,7 @@ exports.verifyToken = async (req, res, next) => {
 // methode pour vérifier le token de l'invitation
 exports.verifyTokenInvit = async (req, res, next) => {
     try {
-        const token = req.header('authorization');
+        const token = req.header('authorization_invit');
 
         if (token !== undefined) {
             const payload = await new Promise((resolve, reject) => {

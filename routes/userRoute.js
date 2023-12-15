@@ -37,12 +37,12 @@ router
 
 router
     .route('/:user_id/groups/:group_id/invitation/accept')
-    .all(jwtMiddleware.verifyTokenInvit)
+    .all(jwtMiddleware.verifyToken, jwtMiddleware.verifyTokenInvit)
     .post(userController.acceptInvit)
 
 router
     .route('/:user_id/groups/:group_id/invitation/decline')
-    .all(jwtMiddleware.verifyTokenInvit)
+    .all(jwtMiddleware.verifyToken, jwtMiddleware.verifyTokenInvit)
     .post(userController.declineInvit)
 
 module.exports = router;
