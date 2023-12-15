@@ -18,7 +18,7 @@ exports.verifyToken = async (req, res, next) => {
             });
 
             // vérifier le token par rapport à un user id
-            if (payload.user_id === req.user_id) {
+            if (payload.id == req.params.user_id) {
                 req.user = payload;
                 next();
             } else {
