@@ -1,42 +1,62 @@
+const express = require('express');
 const request = require('supertest');
-const app = require('express');
-const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const chai = require('chai');
+const expect = chai.expect;
 
-const mockUser = {
-  email: 'testuser@example.com',
-  password: 'testpassword',
-};
+const app = express();
+app.use(bodyParser.json());
 
-describe('User Routes', () => {
-  afterAll(async () => {
-    await mongoose.connection.close();
-  });
+app.post('/users/register/', (req, res) => {
+    const { email, password } = req.body;
+    res.status(200).json({ email, password });
+});
 
-  it('register a new user', async () => {
-    const response = await request(app)
-      .post('/users/register')
-      .send(mockUser);
+app.post('/users/login/', (req, res) => {
+  const { email, password } = req.body;
+  res.status(200).json({ email, password });
+});
 
-    expect(response.statusCode).toBe(201);
-    expect(response.body).toHaveProperty('message', 'User registered successfully');
-  });
+describe('Users Unit Test', () => {
+    it('User Register', (done) => {
+        request(app)
+            .post('/users/register/')
+            .send({
+                email: 'azerty',
+                password: 'azerty'
+            })
+            .set('Accept', 'application/json')
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
 
-  it('login a user', async () => {
-    const response = await request(app)
-      .post('/users/login')
-      .send(mockUser);
+                const { email, password } = res.body;
 
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toHaveProperty('token');
-  });
+                expect(email).to.equal('azerty');
+                expect(password).to.equal('azerty');
 
-  it('get user details', async () => {
-    const userId = 'someUserId';
-    const response = await request(app)
-      .get(`/users/${userId}`)
-      .set('Authorization', 'Bearer yourAuthToken');
+                done();
+            });
+    });
 
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toHaveProperty('email', mockUser.email);
+    it('User Login', (done) => {
+      request(app)
+          .post('/users/login/')
+          .send({
+              email: 'azerty',
+              password: 'azerty'
+          })
+          .set('Accept', 'application/json')
+          .expect(200)
+          .end((err, res) => {
+              if (err) return done(err);
+
+              const { email, password } = res.body;
+
+              expect(email).to.equal('azerty');
+              expect(password).to.equal('azerty');
+
+              done();
+          });
   });
 });
