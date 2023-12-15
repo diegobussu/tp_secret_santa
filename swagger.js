@@ -11,7 +11,7 @@ const options = {
     },
   },
 
-  apis: ['./routes/*.js'],
+  apis: ['./swaggerDoc/*.js'],
 };
 
 // Initialize Swagger

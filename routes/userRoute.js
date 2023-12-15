@@ -3,39 +3,6 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
 
-/**
- * @swagger
- * tags:
- *   name: Users
- *   description: API for Secret Santa
- */
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       properties:
- *         email:
- *           type: string
- *         password:
- *           type: string
- *       required:
- *         - email
- *         - password
- *     Group:
- *       type: object
- *       properties:
- *         name:
- *           type: string
- *         role:
- *          type: boolean
- *       required:
- *         - name
- *         - role
- */
-
 router
     .route('/register')
     .post(userController.userRegister)
