@@ -135,6 +135,13 @@ exports.getInfoGroup = async (req, res) => {
             return res.status(404).json({ message: 'Groupe non trouvé.' });
         }
 
+        // Vérifiez si l'utilisateur n'est pas dans le groupe
+        const userInGroup = await Group.findOne({ _id: groupId, 'users.user_id': userId });
+
+        if (!userInGroup) {
+            return res.status(400).json({ message: 'Vous n\'êtes pas dans le groupe.' });
+        }
+
         // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
         const isAdmin = group.users.some(u => u.user_id === userId && u.role === 'admin');
 
@@ -253,6 +260,8 @@ exports.acceptInvit = async (req, res) => {
     try {
         const userId = req.params.user_id;
         const groupId = req.params.group_id;
+        const token = req.header('authorization_invit');
+
         // Vérifier si l'utilisateur existe
         const user = await User.findById(userId);
         if (!user) {
@@ -272,11 +281,9 @@ exports.acceptInvit = async (req, res) => {
             return res.status(400).json({ message: 'L\'utilisateur est déjà dans le groupe.' });
         }
 
-        // Vérifiez si l'utilisateur a refusé l'invitation
-        const userRefusedInvitation = user.refuseInvit;
-
-        if (userRefusedInvitation == true) {
-            return res.status(400).json({ message: 'Vous ne pouvez accepter une invitation que vous avez précédemment refusée.' });
+       // Vérifiez si l'utilisateur a déjà refusé l'invitation
+       if (user.invitations.some(invitation => invitation.group_id === groupId && invitation.refuseInvitation && invitation.token === token)) {
+            return res.status(400).json({ message: 'Vous avez déjà refusé l\'invitation.' });
         }
 
         // Ajoutez l'utilisateur au groupe avec le rôle 'user'
@@ -297,6 +304,7 @@ exports.declineInvit = async (req, res) => {
     try {
         const userId= req.params.user_id;
         const groupId = req.params.group_id;
+        const token = req.header('authorization_invit');
 
         // Vérifier si l'utilisateur existe
         const user = await User.findById(userId);
@@ -318,9 +326,13 @@ exports.declineInvit = async (req, res) => {
             return res.status(400).json({ message: 'L\'utilisateur est déjà dans le groupe.' });
         }
 
-        // Mettre à jour la propriété refuseInvit à true dans le schéma de l'utilisateur
-        user.refuseInvit = true;
-        await user.save();
+       // Vérifiez si l'utilisateur a déjà refusé l'invitation
+       if (user.invitations.some(invitation => invitation.group_id === groupId && invitation.refuseInvitation && invitation.token === token)) {
+            return res.status(400).json({ message: 'Vous avez déjà refusé l\'invitation.' });
+        }
+
+        // Mettre à jour la propriété refuseInvit à true dans l'invitation
+        await User.findByIdAndUpdate(userId, { $addToSet: { invitations: { group_id: groupId, refuseInvitation: true, token: token } } });
         
         res.status(200).json({ message: 'Invitation refusée avec succès.' });
     } catch (error) {
