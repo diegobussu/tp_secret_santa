@@ -139,7 +139,7 @@ exports.getInfoGroup = async (req, res) => {
         const isAdmin = group.users.some(u => u.user_id === userId && u.role === 'admin');
 
         if (!isAdmin) {
-            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
+            return res.status(403).json({ message: `Utilisateur trouvé id : ${user.id}, groupe id : ${group.id}` }); 
         }
 
         // Si l'utilisateur est admin dans le groupe, renvoyer les informations du groupe
