@@ -203,7 +203,7 @@
  * @swagger
  * /users/user_id/groups/group_id:
  *   delete:
- *     summary: Info for a group
+ *     summary: Delete a group
  *     tags:
  *       - Groups
  *     requestBody:

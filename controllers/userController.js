@@ -247,6 +247,12 @@ exports.acceptInvit = async (req, res) => {
     try {
         const userId = req.params.user_id;
         const groupId = req.params.group_id;
+        
+        // Vérifier si l'utilisateur existe
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
 
         // Vérifiez si le groupe existe
         const groupExists = await Group.findById(groupId);
@@ -280,6 +286,12 @@ exports.declineInvit = async (req, res) => {
     try {
         const userId= req.params.user_id;
         const groupId = req.params.group_id;
+
+        // Vérifier si l'utilisateur existe
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
 
         // Vérifiez si le groupe existe
         const group = await Group.findById(groupId);
