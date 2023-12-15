@@ -7,6 +7,12 @@ require('dotenv').config();
 // méthode pour s'inscrire
 exports.userRegister = async (req, res) => {
     try {
+        // Vérifier si l'emailest unique
+        const existingEmail = await User.findOne({ email: req.body.email });
+        if (existingEmail) {
+            return res.status(400).json({ message: 'Cet email existe déjà.' });
+        }
+
         let newUser = new User(req.body);
         let user = await newUser.save();
         res.status(201).json({ message: `Utilisateur créé : ${user.email}, id : ${user.id}` });        
@@ -16,6 +22,7 @@ exports.userRegister = async (req, res) => {
         res.status(401).json({message: 'Requete invalide'});
     }
 };
+
 
 // méthode pour se connecter
 exports.userLogin = async (req, res) => {
@@ -71,7 +78,7 @@ exports.putUser = async (req, res) => {
         // Vérifier si l'emailest unique
         const existingEmail = await User.findOne({ email: req.body.email });
         if (existingEmail) {
-            return res.status(400).json({ message: 'L email doit être unique.' });
+            return res.status(400).json({ message: 'Cet email existe déjà.' });
         }
 
         const user = await User.findByIdAndUpdate(req.params.user_id, req.body, {new: true});
@@ -87,7 +94,7 @@ exports.patchUser = async (req, res) => {
         // Vérifier si l'emailest unique
         const existingEmail = await User.findOne({ email: req.body.email });
         if (existingEmail) {
-            return res.status(400).json({ message: 'L email doit être unique.' });
+            return res.status(400).json({ message: 'Cet email existe déjà.' });
         }
 
         const user = await User.findByIdAndUpdate(req.params.user_id, req.body, {new: true});
@@ -128,8 +135,18 @@ exports.getInfoGroup = async (req, res) => {
             return res.status(404).json({ message: 'Groupe non trouvé.' });
         }
 
-        if (group.user_id !== userId || group.role !== 'admin') {
-            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
+        // Vérifiez si l'utilisateur n'est pas dans le groupe
+        const userInGroup = await Group.findOne({ _id: groupId, 'users.user_id': userId });
+
+        if (!userInGroup) {
+            return res.status(400).json({ message: 'Vous n\'êtes pas dans le groupe.' });
+        }
+
+        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        const isAdmin = group.users.some(u => u.user_id === userId && u.role === 'admin');
+
+        if (!isAdmin) {
+            return res.status(403).json({ message: `Utilisateur trouvé id : ${user.id}, groupe id : ${group.id}` }); 
         }
 
         // Si l'utilisateur est admin dans le groupe, renvoyer les informations du groupe
@@ -139,10 +156,17 @@ exports.getInfoGroup = async (req, res) => {
     }
 };
 
+
 // methode pour créer un groupe
 exports.createGroup = async (req, res) => {
     try {
-        await User.findById(req.params.user_id);
+        const userId = req.params.user_id;
+
+        // Vérifier si l'utilisateur existe
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
 
         // Vérifier si le nom du groupe est unique
         const existingGroup = await Group.findOne({ name: req.body.name });
@@ -150,19 +174,17 @@ exports.createGroup = async (req, res) => {
             return res.status(400).json({ message: 'Le nom du groupe doit être unique.' });
         }
 
-        const newGroup = new Group({...req.body, user_id: req.params.user_id});
-        try {
-            const group = await newGroup.save();
-            group.role = 'admin';
-            await group.save();
-            res.status(201).json({ message: `Groupe créé ! id : ${group.id}, role : ${group.role}` });  
-        } catch (error) {
-            res.status(500).json({message: 'Erreur serveur'});
-        }
+        // Créer un nouveau groupe avec l'utilisateur comme administrateur
+        const newGroup = new Group({ ...req.body, users: [{ user_id: userId, role: 'admin' }] });
+        const group = await newGroup.save();
+
+        res.status(201).json({ message: `Groupe créé ! id : ${group.id}, role : ${group.role}` });
     } catch (error) {
-        res.status(500).json({message: 'Utilisateur non trouvé.'});
+        console.error(error);
+        res.status(500).json({ message: 'Erreur serveur' });
     }
 };
+
 
 // méthode pour supprimer un groupe
 exports.deleteGroup = async (req, res) => {
@@ -170,105 +192,30 @@ exports.deleteGroup = async (req, res) => {
         const userId = req.params.user_id;
         const groupId = req.params.group_id;
 
+        // Vérifier si l'utilisateur existe
         const user = await User.findById(userId);
-
         if (!user) {
             return res.status(404).json({ message: 'Utilisateur non trouvé.' });
         }
 
-        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        // Vérifier si le groupe existe
         const group = await Group.findById(groupId);
-
         if (!group) {
             return res.status(404).json({ message: 'Groupe non trouvé.' });
         }
 
-        if (group.user_id !== userId || group.role !== 'admin') {
+        // Vérifier si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        const isAdmin = group.users.some(u => u.user_id === userId && u.role === 'admin');
+        if (!isAdmin) {
             return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
         }
 
         // Si l'utilisateur est admin dans le groupe, supprimer le groupe
-        await Group.findByIdAndDelete(req.params.group_id);
-        res.status(200).json({ message: 'Groupe supprimé' });
+        await Group.findByIdAndDelete(groupId);
+        res.status(200).json({ message: 'Groupe supprimé avec succès.' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Erreur serveur' });
-    }
-};
-
-// méthode pour modifier partiellement un groupe
-exports.putGroup = async (req, res) => {
-    try {
-        // Vérifier si le nom du groupe est unique
-        const existingGroup = await Group.findOne({ name: req.body.name });
-        if (existingGroup) {
-            return res.status(400).json({ message: 'Le nom du groupe doit être unique.' });
-        }
-        
-        const userId = req.params.user_id;
-        const groupId = req.params.group_id;
-
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-        }
-
-        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
-        const group = await Group.findById(groupId);
-
-        if (!group) {
-            return res.status(404).json({ message: 'Groupe non trouvé.' });
-        }
-
-        if (group.user_id !== userId || group.role !== 'admin') {
-            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
-        }
-
-        // Si l'utilisateur est admin dans le groupe, modifier les informations du groupe
-
-        await Group.findByIdAndUpdate(req.params.group_id, req.body, {new: true});
-        res.status(200).json(group);
-    } catch (error) {
-        res.status(500).json({message: 'Erreur serveur'});
-    }
-};
-
-// méthode pour modifier un groupe
-exports.patchGroup = async (req, res) => {
-    try {
-        // Vérifier si le nom du groupe est unique
-        const existingGroup = await Group.findOne({ name: req.body.name });
-        if (existingGroup) {
-            return res.status(400).json({ message: 'Le nom du groupe doit être unique.' });
-        }
-
-        const userId = req.params.user_id;
-        const groupId = req.params.group_id;
-
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-        }
-
-        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
-        const group = await Group.findById(groupId);
-
-        if (!group) {
-            return res.status(404).json({ message: 'Groupe non trouvé.' });
-        }
-
-        if (group.user_id !== userId || group.role !== 'admin') {
-            return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
-        }
-
-        // Si l'utilisateur est admin dans le groupe, modifier les informations du groupe
-
-        group = await Group.findByIdAndUpdate(req.params.group_id, req.body, {new: true});
-        res.status(200).json(group);
-    } catch (error) {
-        res.status(500).json({message: 'Erreur serveur'});
     }
 };
 
@@ -278,30 +225,32 @@ exports.addInvitation = async (req, res) => {
         const userId = req.params.user_id;
         const groupId = req.params.group_id;
 
+        // Vérifier si l'utilisateur existe
         const user = await User.findById(userId);
-
         if (!user) {
             return res.status(404).json({ message: 'Utilisateur non trouvé.' });
         }
 
-        // Vérifie si l'utilisateur a le rôle "admin" dans le groupe spécifié
+        // Vérifier si l'utilisateur a le rôle "admin" dans le groupe spécifié
         const group = await Group.findById(groupId);
-
         if (!group) {
             return res.status(404).json({ message: 'Groupe non trouvé.' });
         }
 
-        if (group.user_id !== userId || group.role !== 'admin') {
+        const isAdmin = group.users.some(u => u.user_id === userId && u.role === 'admin');
+        if (!isAdmin) {
             return res.status(403).json({ message: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.' });
         }
 
-        // Si l'utilisateur est admin dans le groupe, envoyer une invitation à tous les users en BDD + générer un token de 1h
+        // Si l'utilisateur est admin dans le groupe, générer un token de 1h
+        const invitToken = await jwt.sign({ groupId, userId }, process.env.JWT_KEY_INVIT, { expiresIn: '1h' });
 
-        const token = await jwt.sign({ groupId, userId }, process.env.JWT_KEY_INVIT, { expiresIn: '1h' });
+        // Envoyer une invitation à tous les utilisateurs en BDD (ajouter une logique ici si nécessaire)
 
-        res.status(200).json({ message: 'Invitation envoyée avec succès.', token });
+        res.status(200).json({ message: 'Invitation envoyée avec succès.', invitToken });
     } catch (error) {
-        res.status(500).json({message: 'Erreur serveur'});
+        console.error(error);
+        res.status(500).json({ message: 'Erreur serveur' });
     }
 };
 
@@ -311,50 +260,85 @@ exports.acceptInvit = async (req, res) => {
     try {
         const userId = req.params.user_id;
         const groupId = req.params.group_id;
+        const token = req.header('authorization_invit');
 
+        // Vérifier si l'utilisateur existe
         const user = await User.findById(userId);
-        const group = await Group.findById(groupId);
-
         if (!user) {
             return res.status(404).json({ message: 'Utilisateur non trouvé.' });
         }
+        // Vérifiez si le groupe existe
+        const groupExists = await Group.findById(groupId);
 
-        if (group.user_id == userId || group.role == 'admin') {
-            return res.status(403).json({ message: 'Accès refusé. Vous ne pouvez pas accepter une invitation de votre propre groupe.' });
+        if (!groupExists) {
+            return res.status(404).json({ message: 'Le groupe n\'existe pas.' });
         }
 
-        // Ajouter l'utilisateur au groupe et lui attribuer le rôle "user"
-        group.role = 'admin';
+        // Vérifiez si l'utilisateur n'est pas déjà dans le groupe
+        const userInGroup = await Group.findOne({ _id: groupId, 'users.user_id': userId });
 
-        await group.save();
+        if (userInGroup) {
+            return res.status(400).json({ message: 'L\'utilisateur est déjà dans le groupe.' });
+        }
 
-        res.status(200).json({ message: 'Invitation acceptée avec succès.' });
+       // Vérifiez si l'utilisateur a déjà refusé l'invitation
+       if (user.invitations.some(invitation => invitation.group_id === groupId && invitation.refuseInvitation && invitation.token === token)) {
+            return res.status(400).json({ message: 'Vous avez déjà refusé l\'invitation.' });
+        }
+
+        // Ajoutez l'utilisateur au groupe avec le rôle 'user'
+        await Group.findByIdAndUpdate(groupId, { $addToSet: { users: { user_id: userId, role: 'user' } } });
+
+        res.status(200).json({ message: 'Invitation acceptée avec succès. Vous avez été ajouté dans le groupe.' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Erreur serveur' });
     }
 };
 
+
+
+
 // méthode pour refuser une invitation
 exports.declineInvit = async (req, res) => {
     try {
-        const userId = req.params.user_id;
+        const userId= req.params.user_id;
         const groupId = req.params.group_id;
+        const token = req.header('authorization_invit');
 
+        // Vérifier si l'utilisateur existe
         const user = await User.findById(userId);
-        const group = await Group.findById(groupId);
-
         if (!user) {
             return res.status(404).json({ message: 'Utilisateur non trouvé.' });
         }
 
-        if (group.user_id == userId || group.role == 'admin') {
-            return res.status(403).json({ message: 'Accès refusé. Vous ne pouvez pas refuser une invitation de votre propre groupe.' });
+        // Vérifiez si le groupe existe
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Le groupe n\'existe pas.' });
         }
 
+        // Vérifiez si l'utilisateur est dans le groupe
+        const userInGroup = group.users.some(u => u.user_id === userId);
+
+        if (userInGroup) {
+            return res.status(400).json({ message: 'L\'utilisateur est déjà dans le groupe.' });
+        }
+
+       // Vérifiez si l'utilisateur a déjà refusé l'invitation
+       if (user.invitations.some(invitation => invitation.group_id === groupId && invitation.refuseInvitation && invitation.token === token)) {
+            return res.status(400).json({ message: 'Vous avez déjà refusé l\'invitation.' });
+        }
+
+        // Mettre à jour la propriété refuseInvit à true dans l'invitation
+        await User.findByIdAndUpdate(userId, { $addToSet: { invitations: { group_id: groupId, refuseInvitation: true, token: token } } });
+        
         res.status(200).json({ message: 'Invitation refusée avec succès.' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Erreur serveur' });
     }
 };
+
+

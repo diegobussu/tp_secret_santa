@@ -11,7 +11,23 @@ let userSchema = new Schema ({
     password: {
         type: String,
         required: true
-    }
+    },
+    invitations: [
+        {
+            group_id: {
+                type: String,
+                required: true,
+            },
+            refuseInvitation: {
+                type: String,
+                default: false
+            },
+            token: {
+                type: String,
+                required: true,
+            },
+        },
+    ]
 });
 
 // hash avant de save en base de donnée
