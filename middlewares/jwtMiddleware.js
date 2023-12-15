@@ -22,14 +22,14 @@ exports.verifyToken = async (req, res, next) => {
                 req.user = payload;
                 next();
             } else {
-                res.status(403).json({ message: 'Accès interdit : token invalide pour cet utilisateur' });
+                res.status(403).json({ message: 'Accès interdit : token login invalide pour cet utilisateur' });
             }
         } else {
-            res.status(403).json({ message: 'Accès interdit : token manquant' });
+            res.status(403).json({ message: 'Accès interdit : token login manquant' });
         }
     } catch (error) {
         console.log(error);
-        res.status(403).json({ message: 'Accès interdit : token invalide' });
+        res.status(403).json({ message: 'Accès interdit : token login invalide' });
     }
 };
 
@@ -57,13 +57,13 @@ exports.verifyTokenInvit = async (req, res, next) => {
                 req.user = payload;
                 next();
             } else {
-                res.status(403).json({ message: 'Accès interdit : token invalide pour cette invitation' });
+                res.status(403).json({ message: 'Accès interdit : token invit invalide pour cette invitation' });
             }
         } else {
-            res.status(403).json({ message: 'Accès interdit : token manquant' });
+            res.status(403).json({ message: 'Accès interdit : token invit manquant' });
         }
     } catch (error) {
         console.log(error);
-        res.status(403).json({ message: 'Accès interdit : token invalide' });
+        res.status(403).json({ message: 'Accès interdit : token invit invalide' });
     }
 };

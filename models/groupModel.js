@@ -12,7 +12,7 @@ let groupSchema = new Schema({
                 type: String,
                 default: 'user',
                 enum: ['user', 'admin'],
-            },
+            }
         },
     ],
 
