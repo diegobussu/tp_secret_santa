@@ -7,6 +7,12 @@ require('dotenv').config();
 // méthode pour s'inscrire
 exports.userRegister = async (req, res) => {
     try {
+        // Vérifier si l'emailest unique
+        const existingEmail = await User.findOne({ email: req.body.email });
+        if (existingEmail) {
+            return res.status(400).json({ message: 'Cet email existe déjà.' });
+        }
+
         let newUser = new User(req.body);
         let user = await newUser.save();
         res.status(201).json({ message: `Utilisateur créé : ${user.email}, id : ${user.id}` });        
@@ -72,7 +78,7 @@ exports.putUser = async (req, res) => {
         // Vérifier si l'emailest unique
         const existingEmail = await User.findOne({ email: req.body.email });
         if (existingEmail) {
-            return res.status(400).json({ message: 'L email doit être unique.' });
+            return res.status(400).json({ message: 'Cet email existe déjà.' });
         }
 
         const user = await User.findByIdAndUpdate(req.params.user_id, req.body, {new: true});
@@ -88,7 +94,7 @@ exports.patchUser = async (req, res) => {
         // Vérifier si l'emailest unique
         const existingEmail = await User.findOne({ email: req.body.email });
         if (existingEmail) {
-            return res.status(400).json({ message: 'L email doit être unique.' });
+            return res.status(400).json({ message: 'Cet email existe déjà.' });
         }
 
         const user = await User.findByIdAndUpdate(req.params.user_id, req.body, {new: true});
