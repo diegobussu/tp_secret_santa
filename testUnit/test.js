@@ -80,7 +80,6 @@ describe('Users Unit Test', () => {
         expect(email).to.equal('testuser@example.com');
         expect(password).to.not.equal('testpassword'); // Le mot de passe doit être haché
 
-        // Save the hashed password to the variable
         hashedPassword = password;
 
         // Vérification de l'enregistrement dans la base de données
